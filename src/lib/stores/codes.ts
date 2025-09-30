@@ -1,5 +1,5 @@
 import { atom, map, computed } from 'nanostores';
-import type { ShiftCode, CodeFilters, ApiResponse, BackendShiftCode, Platform } from '../../types/api';
+import type { ShiftCode, CodeFilters, BackendShiftCode, Platform } from '../../types/api';
 import { apiGet, apiPost } from '../utils/api';
 
 // Code list state
@@ -105,7 +105,7 @@ function transformBackendCode(backendCode: BackendShiftCode): ShiftCode {
     source,
     sourceUrl: backendCode.sourceUrl,
     sourceAuthor,
-    expiresAt: backendCode.expiresAt,
+    expiresAt: backendCode.expiresAt || undefined,
     createdAt: backendCode.createdAt,
     updatedAt: backendCode.updatedAt,
     status: backendCode.status as any,

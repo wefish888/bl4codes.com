@@ -184,6 +184,12 @@ function getPlatformName(platform: string): string {
 
 <script>
   // Report code function
+  declare global {
+    interface Window {
+      reportCode: (codeId: string) => void;
+    }
+  }
+
   window.reportCode = function(codeId: string) {
     const reason = prompt('Please enter the reason for reporting:');
     if (!reason) return;

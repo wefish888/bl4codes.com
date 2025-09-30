@@ -188,11 +188,11 @@ Providing the latest and most accurate Shift Codes for Borderlands players to he
         function updateThemeIcon(isDark: boolean) {
           if (sunIcon && moonIcon) {
             if (isDark) {
-              sunIcon.style.display = 'none';
-              moonIcon.style.display = 'block';
+              (sunIcon as HTMLElement).style.display = 'none';
+              (moonIcon as HTMLElement).style.display = 'block';
             } else {
-              sunIcon.style.display = 'block';
-              moonIcon.style.display = 'none';
+              (sunIcon as HTMLElement).style.display = 'block';
+              (moonIcon as HTMLElement).style.display = 'none';
             }
           }
         }

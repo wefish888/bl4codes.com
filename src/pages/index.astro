@@ -4,13 +4,13 @@ import CodeFilters from '../components/islands/CodeFilters';
 import CodeList from '../components/islands/CodeList';
 
 // Only fetch stats during build
-let stats = { users: 0, codes: 0, favorites: 0 };
+let stats = { users: 0, codes: 0, favorites: 0, activeCodes: 0, totalCopies: 0 };
 
 try {
   // Fetch stats from backend API
   const statsResponse = await fetch('http://localhost:3006/api/v1/codes/stats');
   if (statsResponse.ok) {
-    const statsData = await statsResponse.json();
+    const statsData = await statsResponse.json() as any;
     if (statsData.success) {
       stats = statsData.data;
     }

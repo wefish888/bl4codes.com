@@ -8,9 +8,11 @@ const sortedPosts = allPosts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pu
 // Group posts by category
 const categories = [...new Set(sortedPosts.map(post => post.data.category))];
 const postsByCategory = categories.reduce((acc, category) => {
-  acc[category] = sortedPosts.filter(post => post.data.category === category);
+  if (category) {
+    acc[category] = sortedPosts.filter(post => post.data.category === category);
+  }
   return acc;
-}, {});
+}, {} as Record<string, typeof sortedPosts>);
 
 const featuredPosts = sortedPosts.filter(post => post.data.featured).slice(0, 6);
 const recentPosts = sortedPosts.slice(0, 12);
@@ -50,9 +52,9 @@ const recentPosts = sortedPosts.slice(0, 12);
         <button class="category-filter active bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors" data-category="all">
           All Guides ({sortedPosts.length})
         </button>
-        {categories.map((category) => (
+        {categories.filter(c => c).map((category) => (
           <button class="category-filter bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" data-category={category}>
-            {category.charAt(0).toUpperCase() + category.slice(1)} ({postsByCategory[category].length})
+            {category!.charAt(0).toUpperCase() + category!.slice(1)} ({postsByCategory[category!].length})
           </button>
         ))}
       </div>
@@ -135,40 +137,42 @@ const recentPosts = sortedPosts.slice(0, 12);
 
   <script>
     // Search functionality
-    const searchInput = document.getElementById('search');
+    const searchInput = document.getElementById('search') as HTMLInputElement | null;
     const postsContainer = document.getElementById('posts-container');
-    const postCards = document.querySelectorAll('.post-card');
-    const categoryFilters = document.querySelectorAll('.category-filter');
+    const postCards = document.querySelectorAll<HTMLElement>('.post-card');
+    const categoryFilters = document.querySelectorAll<HTMLElement>('.category-filter');
 
     let currentCategory = 'all';
 
     searchInput?.addEventListener('input', (e) => {
-      const searchTerm = e.target.value.toLowerCase();
+      const target = e.target as HTMLInputElement;
+      const searchTerm = target.value.toLowerCase();
       filterPosts(searchTerm, currentCategory);
     });
 
     categoryFilters.forEach(filter => {
       filter.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
         categoryFilters.forEach(f => {
           f.classList.remove('active', 'bg-primary-600');
           f.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
         });
 
-        e.target.classList.add('active', 'bg-primary-600');
-        e.target.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
-        e.target.classList.add('text-white');
+        target.classList.add('active', 'bg-primary-600');
+        target.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+        target.classList.add('text-white');
 
-        currentCategory = e.target.dataset.category;
+        currentCategory = target.dataset.category || 'all';
         const searchTerm = searchInput?.value.toLowerCase() || '';
         filterPosts(searchTerm, currentCategory);
       });
     });
 
-    function filterPosts(searchTerm, category) {
+    function filterPosts(searchTerm: string, category: string) {
       postCards.forEach(card => {
-        const title = card.querySelector('h3 a')?.textContent.toLowerCase() || '';
-        const description = card.querySelector('p')?.textContent.toLowerCase() || '';
-        const tags = Array.from(card.querySelectorAll('.bg-gray-100, .dark\\:bg-gray-700')).map(tag => tag.textContent.toLowerCase());
+        const title = card.querySelector('h3 a')?.textContent?.toLowerCase() || '';
+        const description = card.querySelector('p')?.textContent?.toLowerCase() || '';
+        const tags = Array.from(card.querySelectorAll('.bg-gray-100, .dark\\:bg-gray-700')).map(tag => tag.textContent?.toLowerCase() || '');
         const cardCategory = card.dataset.category;
 
         const matchesSearch = !searchTerm ||

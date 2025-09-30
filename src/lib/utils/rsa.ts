@@ -33,7 +33,7 @@ class RSACrypto {
         throw new Error(`Failed to fetch public key: ${response.status}`);
       }
 
-      const result = await response.json();
+      const result = await response.json() as any;
 
       if (!result.success || !result.data.publicKey) {
         throw new Error('Invalid public key response');

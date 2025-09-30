@@ -127,7 +127,7 @@ export async function apiRequest<T = any>(
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const responseData = await response.json();
+    const responseData = await response.json() as any;
 
     // 检查响应是否加密
     if (responseData.encrypted && responseData.data && responseData.iv && responseData.authTag) {

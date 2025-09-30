@@ -46,7 +46,7 @@ class AESCrypto {
       // 设置参数
       decipher.start({
         iv: iv,
-        tag: authTag
+        tag: forge.util.createBuffer(forge.util.hexToBytes(authTag))
       });
 
       // 解密数据
@@ -58,7 +58,7 @@ class AESCrypto {
       }
 
       // 获取解密后的数据
-      const decrypted = decipher.output.toString('utf8');
+      const decrypted = decipher.output.toString();
 
       // 尝试解析为 JSON
       try {
