@@ -42,8 +42,9 @@ export const initializeRSA = async (): Promise<void> => {
       isInitialized = true;
       console.log('[API] RSA initialized successfully');
     } catch (error) {
-      console.error('[API] Failed to initialize RSA:', error);
-      throw error;
+      console.error('[API] Failed to initialize RSA, encryption will be disabled:', error);
+      // 不抛出错误，允许在没有加密的情况下继续
+      isInitialized = false;
     }
   })();
 
@@ -78,38 +79,52 @@ export async function apiRequest<T = any>(
   const apiBaseUrl = getApiBaseUrl();
   const url = endpoint.startsWith('http') ? endpoint : `${apiBaseUrl}${endpoint}`;
 
-  // 确保 RSA 已初始化
-  if (!rsaCrypto.hasPublicKey()) {
-    await initializeRSA();
+  // 尝试初始化 RSA
+  let useEncryption = false;
+  try {
+    if (!rsaCrypto.hasPublicKey()) {
+      await initializeRSA();
+    }
+    useEncryption = rsaCrypto.hasPublicKey();
+  } catch (error) {
+    console.warn('[API] Encryption not available, using plain requests:', error);
+    useEncryption = false;
   }
 
-  // 生成 AES 密钥用于响应加密
-  const aesKeyBase64 = generateAESKey();
-
-  // 使用 RSA 公钥加密 AES 密钥
-  const encryptedAesKey = rsaCrypto.encrypt(aesKeyBase64);
-
-  // 准备请求头（发送加密的 AES 密钥）
-  const requestHeaders: Record<string, string> = {
+  let aesKeyBase64: string | undefined;
+  let requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-AES-Key': encryptedAesKey,  // RSA 加密的 AES 密钥
     ...headers
   };
-
-  // 准备请求体（默认加密）
   let requestBody: string | undefined;
 
-  if (body) {
-    // 加密请求体
-    try {
-      const encryptedData = rsaCrypto.encrypt(body);
-      requestBody = JSON.stringify({
-        encrypted: true,
-        data: encryptedData
-      });
-    } catch (error) {
-      console.error('[API] Failed to encrypt request:', error);
-      throw new Error('Failed to encrypt request data');
+  if (useEncryption) {
+    // 生成 AES 密钥用于响应加密
+    aesKeyBase64 = generateAESKey();
+
+    // 使用 RSA 公钥加密 AES 密钥
+    const encryptedAesKey = rsaCrypto.encrypt(aesKeyBase64);
+
+    // 准备请求头（发送加密的 AES 密钥）
+    requestHeaders['X-AES-Key'] = encryptedAesKey;
+
+    // 准备请求体（加密）
+    if (body) {
+      try {
+        const encryptedData = rsaCrypto.encrypt(body);
+        requestBody = JSON.stringify({
+          encrypted: true,
+          data: encryptedData
+        });
+      } catch (error) {
+        console.error('[API] Failed to encrypt request:', error);
+        throw new Error('Failed to encrypt request data');
+      }
+    }
+  } else {
+    // 不加密，直接发送
+    if (body) {
+      requestBody = JSON.stringify(body);
     }
   }
 
@@ -130,7 +145,7 @@ export async function apiRequest<T = any>(
     const responseData = await response.json() as any;
 
     // 检查响应是否加密
-    if (responseData.encrypted && responseData.data && responseData.iv && responseData.authTag) {
+    if (useEncryption && responseData.encrypted && responseData.data && responseData.iv && responseData.authTag && aesKeyBase64) {
       try {
         console.log('[API] Decrypting response...');
 
