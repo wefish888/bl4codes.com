@@ -1,0 +1,109 @@
+---
+import BaseLayout from '../components/layout/BaseLayout.astro';
+import CodeFilters from '../components/islands/CodeFilters';
+import CodeList from '../components/islands/CodeList';
+
+// Only fetch stats during build
+let stats = { users: 0, codes: 0, favorites: 0 };
+
+try {
+  // Fetch stats from backend API
+  const statsResponse = await fetch('http://localhost:3006/api/v1/codes/stats');
+  if (statsResponse.ok) {
+    const statsData = await statsResponse.json();
+    if (statsData.success) {
+      stats = statsData.data;
+    }
+  }
+} catch (error) {
+  console.error('Failed to fetch stats during build:', error);
+}
+---
+
+<BaseLayout title="BL4Codes.com - Latest Borderlands 4 Shift Codes">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page title and description -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        Borderlands 4 Shift Codes
+      </h1>
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+Real-time updated Borderlands 4 Shift Codes to get Golden Keys, weapon skins, character heads and other game rewards.
+        All codes are sourced from official and community verification to ensure validity.
+      </p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
+        <div class="text-3xl font-bold text-primary-600 dark:text-primary-400">
+          {stats.activeCodes || 0}
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Active Codes</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
+        <div class="text-3xl font-bold text-green-600 dark:text-green-400">
+          {stats.totalCopies || 0}
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Total Copies</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
+        <div class="text-3xl font-bold text-orange-600 dark:text-orange-400">24/7</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Auto Monitoring</div>
+      </div>
+    </div>
+
+    <!-- Filters and search -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8 border border-gray-200 dark:border-gray-700">
+      <CodeFilters client:load />
+    </div>
+
+    <!-- Code list -->
+    <CodeList client:load />
+
+    <!-- BL4 Guides Banner -->
+    <div class="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-8 mb-8 border border-orange-200 dark:border-orange-800">
+      <div class="text-center">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">📖 Complete BL4 Guide Collection</h2>
+        <p class="text-lg text-gray-700 dark:text-gray-300 mb-6 max-w-3xl mx-auto">
+          Master Borderlands 4 with our comprehensive collection of 100+ guides covering weapons, farming, leveling, quests, and advanced strategies.
+        </p>
+        <a href="/blog" class="inline-flex items-center px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors text-lg">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+          Browse All Guides
+        </a>
+      </div>
+    </div>
+
+    <!-- Usage guide -->
+    <div class="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-xl p-8 mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">How to Use Shift Codes</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="text-center">
+          <div class="bg-primary-600 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+            1
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Copy Code</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Click the "Copy Code" button, the code will be automatically copied to clipboard</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-primary-600 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+            2
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Enter Game</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Launch Borderlands 4, go to SHiFT option in the main menu</p>
+        </div>
+        <div class="text-center">
+          <div class="bg-primary-600 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+            3
+          </div>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Redeem Rewards</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Paste the code and confirm to get Golden Keys and other rewards</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</BaseLayout>

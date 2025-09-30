@@ -1,0 +1,189 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../components/layout/BaseLayout.astro';
+
+const allPosts = await getCollection('blog');
+const sortedPosts = allPosts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+// Group posts by category
+const categories = [...new Set(sortedPosts.map(post => post.data.category))];
+const postsByCategory = categories.reduce((acc, category) => {
+  acc[category] = sortedPosts.filter(post => post.data.category === category);
+  return acc;
+}, {});
+
+const featuredPosts = sortedPosts.filter(post => post.data.featured).slice(0, 6);
+const recentPosts = sortedPosts.slice(0, 12);
+---
+
+<BaseLayout title="BL4 Codes - Complete Borderlands 4 Guide Collection" description="Comprehensive collection of Borderlands 4 guides, tips, weapon locations, farming guides, and gameplay strategies. Your ultimate BL4 resource.">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page title and description -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        Borderlands 4 Complete Guide Collection
+      </h1>
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+        Discover everything you need to master Borderlands 4 with our comprehensive collection of guides,
+        weapon locations, farming strategies, and gameplay tips from the community.
+      </p>
+    </div>
+
+    <!-- Search and filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8 border border-gray-200 dark:border-gray-700">
+      <div class="max-w-2xl mx-auto mb-6">
+        <div class="relative">
+          <input
+            type="text"
+            id="search"
+            placeholder="Search guides..."
+            class="w-full px-4 py-3 pl-12 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"
+          >
+          <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Category filters -->
+      <div class="flex flex-wrap gap-2 justify-center">
+        <button class="category-filter active bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors" data-category="all">
+          All Guides ({sortedPosts.length})
+        </button>
+        {categories.map((category) => (
+          <button class="category-filter bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" data-category={category}>
+            {category.charAt(0).toUpperCase() + category.slice(1)} ({postsByCategory[category].length})
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- Featured Guides -->
+    {featuredPosts.length > 0 && (
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Featured Guides</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {featuredPosts.map((post) => (
+            <article class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700">
+              <div class="p-6">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    {post.data.category}
+                  </span>
+                  <time class="text-gray-500 dark:text-gray-400 text-sm">
+                    {post.data.pubDate.toLocaleDateString()}
+                  </time>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                  <a href={`/blog/${post.slug}`}>
+                    {post.data.title}
+                  </a>
+                </h3>
+                <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                  {post.data.description}
+                </p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  {post.data.tags?.slice(0, 3).map((tag) => (
+                    <span class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-xs">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- All Guides -->
+    <section>
+      <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">All Guides</h2>
+      <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {sortedPosts.map((post) => (
+          <article class="post-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:transform hover:scale-105 border border-gray-200 dark:border-gray-700" data-category={post.data.category}>
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-3">
+                <span class="bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {post.data.category}
+                </span>
+                <time class="text-gray-500 dark:text-gray-400 text-sm">
+                  {post.data.pubDate.toLocaleDateString()}
+                </time>
+              </div>
+              <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                <a href={`/blog/${post.slug}`}>
+                  {post.data.title}
+                </a>
+              </h3>
+              <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-4">
+                {post.data.description}
+              </p>
+              <div class="flex flex-wrap gap-2">
+                {post.data.tags?.slice(0, 3).map((tag) => (
+                  <span class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-xs">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Search functionality
+    const searchInput = document.getElementById('search');
+    const postsContainer = document.getElementById('posts-container');
+    const postCards = document.querySelectorAll('.post-card');
+    const categoryFilters = document.querySelectorAll('.category-filter');
+
+    let currentCategory = 'all';
+
+    searchInput?.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      filterPosts(searchTerm, currentCategory);
+    });
+
+    categoryFilters.forEach(filter => {
+      filter.addEventListener('click', (e) => {
+        categoryFilters.forEach(f => {
+          f.classList.remove('active', 'bg-primary-600');
+          f.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+        });
+
+        e.target.classList.add('active', 'bg-primary-600');
+        e.target.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+        e.target.classList.add('text-white');
+
+        currentCategory = e.target.dataset.category;
+        const searchTerm = searchInput?.value.toLowerCase() || '';
+        filterPosts(searchTerm, currentCategory);
+      });
+    });
+
+    function filterPosts(searchTerm, category) {
+      postCards.forEach(card => {
+        const title = card.querySelector('h3 a')?.textContent.toLowerCase() || '';
+        const description = card.querySelector('p')?.textContent.toLowerCase() || '';
+        const tags = Array.from(card.querySelectorAll('.bg-gray-100, .dark\\:bg-gray-700')).map(tag => tag.textContent.toLowerCase());
+        const cardCategory = card.dataset.category;
+
+        const matchesSearch = !searchTerm ||
+          title.includes(searchTerm) ||
+          description.includes(searchTerm) ||
+          tags.some(tag => tag.includes(searchTerm));
+
+        const matchesCategory = category === 'all' || cardCategory === category;
+
+        if (matchesSearch && matchesCategory) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</BaseLayout>
