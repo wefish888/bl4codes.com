@@ -2,12 +2,7 @@
 import BaseLayout from '../components/layout/BaseLayout.astro';
 import CodeFilters from '../components/islands/CodeFilters';
 import CodeList from '../components/islands/CodeList';
-
-// Only fetch stats during build
-let stats = { users: 0, codes: 0, favorites: 0, activeCodes: 0, totalCopies: 0 };
-
-// Skip fetching stats during build to avoid connection issues
-// Stats will be loaded dynamically by the client-side components
+import StatsDisplay from '../components/islands/StatsDisplay';
 ---
 
 <BaseLayout title="BL4Codes.com - Latest Borderlands 4 Shift Codes">
@@ -15,7 +10,7 @@ let stats = { users: 0, codes: 0, favorites: 0, activeCodes: 0, totalCopies: 0 }
     <!-- Page title and description -->
     <div class="text-center mb-12">
       <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-        Borderlands 4 Shift Codes
+        Borderlands 4 Shift Codes(bl4 shift codes)
       </h1>
       <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
 Real-time updated Borderlands 4 Shift Codes to get Golden Keys, weapon skins, character heads and other game rewards.
@@ -24,24 +19,7 @@ Real-time updated Borderlands 4 Shift Codes to get Golden Keys, weapon skins, ch
     </div>
 
     <!-- Statistics -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
-        <div class="text-3xl font-bold text-primary-600 dark:text-primary-400">
-          {stats.activeCodes || 0}
-        </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Active Codes</div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
-        <div class="text-3xl font-bold text-green-600 dark:text-green-400">
-          {stats.totalCopies || 0}
-        </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Total Copies</div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
-        <div class="text-3xl font-bold text-orange-600 dark:text-orange-400">24/7</div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Auto Monitoring</div>
-      </div>
-    </div>
+    <StatsDisplay client:load />
 
     <!-- Filters and search -->
     <div class="bg-white dark:bg-gray-800 rounded-lg p-6 mb-8 border border-gray-200 dark:border-gray-700">
