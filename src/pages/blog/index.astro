@@ -15,7 +15,6 @@ const postsByCategory = categories.reduce((acc, category) => {
 }, {} as Record<string, typeof sortedPosts>);
 
 const featuredPosts = sortedPosts.filter(post => post.data.featured).slice(0, 6);
-const recentPosts = sortedPosts.slice(0, 12);
 ---
 
 <BaseLayout title="BL4 Codes - Complete Borderlands 4 Guide Collection" description="Comprehensive collection of Borderlands 4 guides, tips, weapon locations, farming guides, and gameplay strategies. Your ultimate BL4 resource.">
@@ -138,7 +137,6 @@ const recentPosts = sortedPosts.slice(0, 12);
   <script>
     // Search functionality
     const searchInput = document.getElementById('search') as HTMLInputElement | null;
-    const postsContainer = document.getElementById('posts-container');
     const postCards = document.querySelectorAll<HTMLElement>('.post-card');
     const categoryFilters = document.querySelectorAll<HTMLElement>('.category-filter');
 
