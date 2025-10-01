@@ -2,9 +2,11 @@ import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
+import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://bl4codes.com',
   output: 'hybrid', // 支持SSR和静态生成
   adapter: cloudflare({
     platformProxy: {
@@ -18,7 +20,13 @@ export default defineConfig({
   },
   integrations: [
     tailwind(),
-    react()
+    react(),
+    sitemap({
+      filter: (page) => !page.includes('/admin') && !page.includes('/api'),
+      changefreq: 'daily',
+      priority: 0.7,
+      lastmod: new Date()
+    })
   ],
   build: {
     assets: '_astro'
