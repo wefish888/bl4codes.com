@@ -106,7 +106,7 @@ class RSACrypto {
    * @param encryptedData Base64 编码的加密数据
    * @returns 解密后的数据对象
    */
-  public decrypt(encryptedData: string): any {
+  public decrypt(_encryptedData: string): any {
     throw new Error('Client-side decryption is not supported (no private key)');
   }
 

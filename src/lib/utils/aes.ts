@@ -95,7 +95,7 @@ class AESCrypto {
       // 导入密钥
       const cryptoKey = await crypto.subtle.importKey(
         'raw',
-        key,
+        key as BufferSource,
         { name: 'AES-GCM' },
         false,
         ['decrypt']
@@ -107,11 +107,11 @@ class AESCrypto {
       const decryptedBuffer = await crypto.subtle.decrypt(
         {
           name: 'AES-GCM',
-          iv: iv,
+          iv: iv as BufferSource,
           tagLength: 128 // 16 bytes = 128 bits
         },
         cryptoKey,
-        encryptedBuffer
+        encryptedBuffer as BufferSource
       );
 
       console.log('[AES] Data decrypted successfully');
@@ -160,7 +160,7 @@ class AESCrypto {
       // 导入密钥
       const cryptoKey = await crypto.subtle.importKey(
         'raw',
-        key,
+        key as BufferSource,
         { name: 'AES-GCM' },
         false,
         ['encrypt']
@@ -170,11 +170,11 @@ class AESCrypto {
       const encryptedBuffer = await crypto.subtle.encrypt(
         {
           name: 'AES-GCM',
-          iv: iv,
+          iv: iv as BufferSource,
           tagLength: 128 // 16 bytes auth tag
         },
         cryptoKey,
-        dataBuffer
+        dataBuffer as BufferSource
       );
 
       // GCM 模式会在加密数据末尾附加 authTag
