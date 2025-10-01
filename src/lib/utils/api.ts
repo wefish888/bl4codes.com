@@ -1,4 +1,3 @@
-import { rsaCrypto } from './rsa';
 import { aesCrypto } from './aes';
 
 /**
@@ -8,6 +7,17 @@ interface ApiRequestConfig {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   body?: any;
   headers?: Record<string, string>;
+  skipEncryption?: boolean; // 跳过加密（用于白名单路由）
+}
+
+/**
+ * 加密响应接口
+ */
+interface EncryptedResponse {
+  encrypted: true;
+  data: string;
+  iv: string;
+  authTag: string;
 }
 
 /**
@@ -15,56 +25,74 @@ interface ApiRequestConfig {
  */
 export const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
-    return import.meta.env.PUBLIC_API_BASE_URL || 'https://api.bl4codes.com';
+    return import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8787';
   }
-  return import.meta.env.PUBLIC_API_BASE_URL || 'https://api.bl4codes.com';
+  return import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8787';
 };
 
 /**
- * 初始化 RSA 加密（获取公钥）
+ * AES 密钥管理（存储在内存中）
  */
-let isInitialized = false;
-let initializationPromise: Promise<void> | null = null;
+class AESKeyManager {
+  private static instance: AESKeyManager;
+  private aesKey: string | null = null;
 
-export const initializeRSA = async (): Promise<void> => {
-  if (isInitialized) {
-    return;
-  }
+  private constructor() {}
 
-  if (initializationPromise) {
-    return initializationPromise;
-  }
-
-  initializationPromise = (async () => {
-    try {
-      const apiBaseUrl = getApiBaseUrl();
-      await rsaCrypto.fetchPublicKey(apiBaseUrl);
-      isInitialized = true;
-      console.log('[API] RSA initialized successfully');
-    } catch (error) {
-      console.error('[API] Failed to initialize RSA, encryption will be disabled:', error);
-      // 不抛出错误，允许在没有加密的情况下继续
-      isInitialized = false;
+  public static getInstance(): AESKeyManager {
+    if (!AESKeyManager.instance) {
+      AESKeyManager.instance = new AESKeyManager();
     }
-  })();
+    return AESKeyManager.instance;
+  }
 
-  return initializationPromise;
-};
+  /**
+   * 获取或生成 AES 密钥
+   */
+  public getKey(): string {
+    if (!this.aesKey) {
+      console.log('[API] Generating new AES key');
+      this.aesKey = aesCrypto.generateKey();
+    }
+    return this.aesKey;
+  }
+
+  /**
+   * 清除密钥（用于安全退出或密钥轮换）
+   */
+  public clearKey(): void {
+    this.aesKey = null;
+    console.log('[API] AES key cleared');
+  }
+
+  /**
+   * 轮换密钥
+   */
+  public rotateKey(): string {
+    console.log('[API] Rotating AES key');
+    this.aesKey = aesCrypto.generateKey();
+    return this.aesKey;
+  }
+}
+
+const keyManager = AESKeyManager.getInstance();
 
 /**
- * 生成随机 AES 密钥（Base64 编码）
+ * 检查响应是否为加密响应
  */
-function generateAESKey(): string {
-  // 生成 32 字节（256 位）的随机密钥
-  const keyBytes = new Uint8Array(32);
-  crypto.getRandomValues(keyBytes);
-
-  // 转换为 Base64
-  return btoa(String.fromCharCode(...keyBytes));
+function isEncryptedResponse(data: any): data is EncryptedResponse {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    data.encrypted === true &&
+    typeof data.data === 'string' &&
+    typeof data.iv === 'string' &&
+    typeof data.authTag === 'string'
+  );
 }
 
 /**
- * 发起 API 请求（默认加密）
+ * 发起 API 请求（自动处理加密）
  */
 export async function apiRequest<T = any>(
   endpoint: string,
@@ -73,63 +101,37 @@ export async function apiRequest<T = any>(
   const {
     method = 'GET',
     body,
-    headers = {}
+    headers = {},
+    skipEncryption = false
   } = config;
 
   const apiBaseUrl = getApiBaseUrl();
   const url = endpoint.startsWith('http') ? endpoint : `${apiBaseUrl}${endpoint}`;
 
-  // 尝试初始化 RSA
-  let useEncryption = false;
-  try {
-    if (!rsaCrypto.hasPublicKey()) {
-      await initializeRSA();
-    }
-    useEncryption = rsaCrypto.hasPublicKey();
-  } catch (error) {
-    console.warn('[API] Encryption not available, using plain requests:', error);
-    useEncryption = false;
-  }
+  console.log(`[API] ${method} ${url}`);
 
-  let aesKeyBase64: string | undefined;
   let requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     ...headers
   };
+
   let requestBody: string | undefined;
 
-  if (useEncryption) {
-    // 生成 AES 密钥用于响应加密
-    aesKeyBase64 = generateAESKey();
+  // 如果不跳过加密，添加 AES 密钥
+  if (!skipEncryption) {
+    const aesKey = keyManager.getKey();
+    requestHeaders['X-AES-Key'] = aesKey;
+    console.log('[API] Added AES key to request headers');
+  }
 
-    // 使用 RSA 公钥加密 AES 密钥
-    const encryptedAesKey = rsaCrypto.encrypt(aesKeyBase64);
-
-    // 准备请求头（发送加密的 AES 密钥）
-    requestHeaders['X-AES-Key'] = encryptedAesKey;
-
-    // 准备请求体（加密）
-    if (body) {
-      try {
-        const encryptedData = rsaCrypto.encrypt(body);
-        requestBody = JSON.stringify({
-          encrypted: true,
-          data: encryptedData
-        });
-      } catch (error) {
-        console.error('[API] Failed to encrypt request:', error);
-        throw new Error('Failed to encrypt request data');
-      }
-    }
-  } else {
-    // 不加密，直接发送
-    if (body) {
-      requestBody = JSON.stringify(body);
-    }
+  // 准备请求体
+  if (body) {
+    requestBody = JSON.stringify(body);
   }
 
   // 发起请求
   try {
+    console.log('[API] Sending request...');
     const response = await fetch(url, {
       method,
       headers: requestHeaders,
@@ -137,22 +139,25 @@ export async function apiRequest<T = any>(
       credentials: 'include'
     });
 
+    console.log(`[API] Response status: ${response.status}`);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`[API] Request failed: ${response.status}`, errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const responseData = await response.json() as any;
 
     // 检查响应是否加密
-    if (useEncryption && responseData.encrypted && responseData.data && responseData.iv && responseData.authTag && aesKeyBase64) {
-      try {
-        console.log('[API] Decrypting response...');
+    if (isEncryptedResponse(responseData)) {
+      console.log('[API] Response is encrypted, decrypting...');
 
-        // 使用客户端生成的 AES 密钥解密响应数据
-        const decryptedData = aesCrypto.decrypt(
+      try {
+        const aesKey = keyManager.getKey();
+        const decryptedData = await aesCrypto.decrypt(
           responseData.data,
-          aesKeyBase64,
+          aesKey,
           responseData.iv,
           responseData.authTag
         );
@@ -161,11 +166,12 @@ export async function apiRequest<T = any>(
         return decryptedData as T;
       } catch (error) {
         console.error('[API] Failed to decrypt response:', error);
-        throw new Error('Failed to decrypt response data');
+        throw new Error(`Failed to decrypt response: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
     // 如果响应未加密，返回原始数据
+    console.log('[API] Response is not encrypted');
     return responseData as T;
   } catch (error) {
     console.error('[API] Request failed:', error);
@@ -176,34 +182,66 @@ export async function apiRequest<T = any>(
 /**
  * 便捷的 GET 请求方法
  */
-export const apiGet = <T = any>(endpoint: string, config?: Omit<ApiRequestConfig, 'method' | 'body'>): Promise<T> => {
+export const apiGet = <T = any>(
+  endpoint: string,
+  config?: Omit<ApiRequestConfig, 'method' | 'body'>
+): Promise<T> => {
   return apiRequest<T>(endpoint, { ...config, method: 'GET' });
 };
 
 /**
  * 便捷的 POST 请求方法
  */
-export const apiPost = <T = any>(endpoint: string, body?: any, config?: Omit<ApiRequestConfig, 'method' | 'body'>): Promise<T> => {
+export const apiPost = <T = any>(
+  endpoint: string,
+  body?: any,
+  config?: Omit<ApiRequestConfig, 'method' | 'body'>
+): Promise<T> => {
   return apiRequest<T>(endpoint, { ...config, method: 'POST', body });
 };
 
 /**
  * 便捷的 PUT 请求方法
  */
-export const apiPut = <T = any>(endpoint: string, body?: any, config?: Omit<ApiRequestConfig, 'method' | 'body'>): Promise<T> => {
+export const apiPut = <T = any>(
+  endpoint: string,
+  body?: any,
+  config?: Omit<ApiRequestConfig, 'method' | 'body'>
+): Promise<T> => {
   return apiRequest<T>(endpoint, { ...config, method: 'PUT', body });
 };
 
 /**
  * 便捷的 DELETE 请求方法
  */
-export const apiDelete = <T = any>(endpoint: string, config?: Omit<ApiRequestConfig, 'method' | 'body'>): Promise<T> => {
+export const apiDelete = <T = any>(
+  endpoint: string,
+  config?: Omit<ApiRequestConfig, 'method' | 'body'>
+): Promise<T> => {
   return apiRequest<T>(endpoint, { ...config, method: 'DELETE' });
 };
 
 /**
  * 便捷的 PATCH 请求方法
  */
-export const apiPatch = <T = any>(endpoint: string, body?: any, config?: Omit<ApiRequestConfig, 'method' | 'body'>): Promise<T> => {
+export const apiPatch = <T = any>(
+  endpoint: string,
+  body?: any,
+  config?: Omit<ApiRequestConfig, 'method' | 'body'>
+): Promise<T> => {
   return apiRequest<T>(endpoint, { ...config, method: 'PATCH', body });
+};
+
+/**
+ * 清除 AES 密钥（用于安全退出）
+ */
+export const clearEncryptionKey = (): void => {
+  keyManager.clearKey();
+};
+
+/**
+ * 轮换 AES 密钥（用于定期密钥更新）
+ */
+export const rotateEncryptionKey = (): void => {
+  keyManager.rotateKey();
 };
