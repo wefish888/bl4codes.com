@@ -10,9 +10,13 @@ function CodeCardComponent({ code }: { code: ShiftCode }) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(code.code);
-      await copyCode(code.id);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+
+      // Record copy event (async, don't wait for it)
+      copyCode(code.id).catch(error => {
+        console.warn('Failed to record copy event:', error);
+      });
     } catch (error) {
       console.error('Failed to copy code:', error);
     }
@@ -21,6 +25,11 @@ function CodeCardComponent({ code }: { code: ShiftCode }) {
   const isExpired = code.expiresAt && new Date(code.expiresAt) < new Date();
   const isReddit = (code.sourceUrl && code.sourceUrl.includes('reddit')) || code.source === 'reddit';
 
+  // Mask the last 5 characters of the code
+  const maskedCode = code.code.length > 5
+    ? code.code.slice(0, -5) + '*****'
+    : code.code;
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
       {/* Header */}
@@ -28,7 +37,7 @@ function CodeCardComponent({ code }: { code: ShiftCode }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono">
-              {code.code}
+              {maskedCode}
             </code>
             {isReddit && (
               <span className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 px-2 py-1 rounded-full text-xs font-medium">
@@ -68,7 +77,13 @@ function CodeCardComponent({ code }: { code: ShiftCode }) {
         {/* Stats */}
         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
           <span>Copied {code.copyCount || 0} times</span>
-          <span>Verified {code.verificationCount || 0} times</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            Uploaded {new Date(code.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })}
+          </span>
         </div>
 
         {/* Copy Button */}
@@ -85,11 +100,9 @@ function CodeCardComponent({ code }: { code: ShiftCode }) {
       </div>
 
       {/* Footer */}
-      {code.sourceUrl && (
-        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 text-xs text-gray-500 dark:text-gray-400">
-          Source: {isReddit ? 'Reddit Community' : 'Official'}
-        </div>
-      )}
+      <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 text-xs text-gray-500 dark:text-gray-400">
+        Source: Network
+      </div>
     </div>
   );
 }

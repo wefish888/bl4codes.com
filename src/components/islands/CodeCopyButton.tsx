@@ -16,20 +16,17 @@ export default function CodeCopyButton({ code, codeId, disabled = false }: Props
 
     setLoading(true);
     try {
-      // Copy to clipboard
+      // Copy to clipboard first
       await navigator.clipboard.writeText(code);
       setCopied(true);
 
-      // Record copy event to backend
-      try {
-        await copyCode(codeId);
-      } catch (error) {
-        console.warn('Failed to record copy event:', error);
-        // Don't affect user experience, continue showing copy success
-      }
-
       // Reset state after 2 seconds
       setTimeout(() => setCopied(false), 2000);
+
+      // Record copy event to backend (async, don't wait for it)
+      copyCode(codeId).catch(error => {
+        console.warn('Failed to record copy event:', error);
+      });
     } catch (err) {
       console.error('Failed to copy:', err);
       // Fallback: select text
@@ -42,6 +39,11 @@ export default function CodeCopyButton({ code, codeId, disabled = false }: Props
         document.body.removeChild(textArea);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+
+        // Record copy event (async, don't wait for it)
+        copyCode(codeId).catch(error => {
+          console.warn('Failed to record copy event:', error);
+        });
       } catch (fallbackError) {
         alert('Copy failed, please manually select and copy the code');
       }
