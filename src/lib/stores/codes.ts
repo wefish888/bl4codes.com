@@ -62,18 +62,7 @@ export const $filteredCodes = computed([$codes, $filters], (codes, filters) => {
     return true;
   });
 
-  // Sorting: Reddit codes prioritized
-  return filtered.sort((a, b) => {
-    // Check if collected from Reddit
-    const aIsReddit = (a.sourceUrl && a.sourceUrl.includes('reddit')) || a.source === 'reddit';
-    const bIsReddit = (b.sourceUrl && b.sourceUrl.includes('reddit')) || b.source === 'reddit';
-
-    if (aIsReddit && !bIsReddit) return -1; // a (Reddit) first
-    if (!aIsReddit && bIsReddit) return 1;  // b (Reddit) first
-
-    // If both are or both aren't Reddit codes, sort by creation time in descending order
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  return filtered;
 });
 
 // Transform backend code data to frontend format
